@@ -21,14 +21,24 @@ parkinsons_model = pickle.load(open(f'{working_dir}/saved_models/parkinsons_mode
 diab_diagnosis = None
 heart_diagnosis = None
 parkinsons_diagnosis = None
+# disease_type = None
 
 # Function to fetch nearby hospitals
-def fetch_nearby_hospitals(latitude, longitude):
+def fetch_nearby_hospitals(latitude, longitude,disease_type):
     """
     Fetch top 5 nearby hospitals sorted by rating using a hardcoded API URL.
     """
+    disease_keywords = {
+        'diabetes': 'diabetes doctor',
+        'heart': 'heart doctor',
+        'parkinsons': "Parkinson's disease doctor"
+    }
     
-    api_url = f"https://maps.gomaps.pro/maps/api/place/nearbysearch/json?keyword=diabetes doctor&location={latitude},{longitude}&radius=5000&key=AlzaSyBPrvZF2bklzIgtDAxwtjqQ2duiHG9PELN"
+    # Get the keyword for the selected disease type
+    keyword = disease_keywords.get(disease_type, 'doctor')
+
+    st.write(keyword)
+    api_url = f"https://maps.gomaps.pro/maps/api/place/nearbysearch/json?keyword={keyword}&location={latitude},{longitude}&radius=5000&key=AlzaSyBPrvZF2bklzIgtDAxwtjqQ2duiHG9PELN"
     try:
         response = requests.get(api_url)
         if response.status_code == 200:
@@ -57,6 +67,7 @@ with st.sidebar:
 
 # Disease prediction logic
 if selected == 'Diabetes Prediction':
+    disease_type = 'diabetes'
     st.title('Diabetes Prediction using ML')
     # User input for diabetes prediction
     col1, col2, col3 = st.columns(3)
@@ -88,7 +99,9 @@ if selected == 'Diabetes Prediction':
         except ValueError:
             st.error("Please provide valid numeric inputs for all fields.")
 
+
 elif selected == 'Heart Disease Prediction':
+    disease_type='heart'
     st.title('Heart Disease Prediction using ML')
     # User input for heart disease prediction
     col1, col2, col3 = st.columns(3)
@@ -131,6 +144,7 @@ elif selected == 'Heart Disease Prediction':
             st.error("Please provide valid numeric inputs for all fields.")
 
 elif selected == "Parkinsons Prediction":
+    disease_type = 'parkinsons'
     st.title("Parkinson's Disease Prediction using ML")
     # User input for Parkinson's prediction
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -199,13 +213,14 @@ latitude = st.text_input("Enter your latitude")
 longitude = st.text_input("Enter your longitude")
 
 # Fetch hospitals when button is clicked
-if st.button("Search Hospitals"):
+if st.button("Search Doctors"):
     try:
         lat = float(latitude)
         lon = float(longitude)
-        hospitals = fetch_nearby_hospitals(lat, lon)
+        # st.write(disease_type)
+        hospitals = fetch_nearby_hospitals(lat, lon,disease_type)
         if hospitals:
-            st.subheader("Top 5 Nearby Hospitals (Sorted by Rating)")
+            st.subheader(f"Top 5 Nearby {disease_type} Doctors (Sorted by Rating)")
             for i, hospital in enumerate(hospitals, 1):
                 st.write(f"**{i}. {hospital.get('name', 'N/A')}**")
                 st.write(f"   - Rating: {hospital.get('rating', 'N/A')}")
