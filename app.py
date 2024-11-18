@@ -3,6 +3,7 @@ import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
 import requests
+from geopy.geocoders import Nominatim
 
 # Set page configuration
 st.set_page_config(page_title="Health Assistant",
@@ -54,6 +55,17 @@ def fetch_nearby_hospitals(latitude, longitude,disease_type):
     except Exception as e:
         st.error(f"An error occurred: {e}")
     return None
+
+
+# Function to get latitude and longitude from place using Geocoding API
+def get_latitude_longitude(place):
+    geolocator = Nominatim(user_agent="health_assistant")
+    location = geolocator.geocode(place)
+    if location:
+        return location.latitude, location.longitude
+    else:
+        st.error("Unable to geocode the location. Please check the place name.")
+        return None, None
 
 # Sidebar for navigation
 with st.sidebar:
@@ -208,24 +220,58 @@ elif selected == "Parkinsons Prediction":
 # Add Hospital Locator section (outside sidebar)
 st.title("Hospital Locator")
 
-# User input for latitude and longitude
-latitude = st.text_input("Enter your latitude")
-longitude = st.text_input("Enter your longitude")
+# User input for place
+place = st.text_input("Enter a place (e.g., Majestic, Bengaluru)")
 
+
+# Fetch hospitals when button is clicked
 # Fetch hospitals when button is clicked
 if st.button("Search Doctors"):
     try:
-        lat = float(latitude)
-        lon = float(longitude)
-        # st.write(disease_type)
-        hospitals = fetch_nearby_hospitals(lat, lon,disease_type)
-        if hospitals:
-            st.subheader(f"Top 5 Nearby {disease_type} Doctors (Sorted by Rating)")
-            for i, hospital in enumerate(hospitals, 1):
-                st.write(f"**{i}. {hospital.get('name', 'N/A')}**")
-                st.write(f"   - Rating: {hospital.get('rating', 'N/A')}")
-                st.write(f"   - Address: {hospital.get('vicinity', 'N/A')}")
-        else:
-            st.error("No hospitals found near the given location.")
-    except ValueError:
-        st.error("Please provide valid numeric latitude and longitude.")
+        if place:
+            latitude, longitude = get_latitude_longitude(place)
+            if latitude and longitude:
+                hospitals = fetch_nearby_hospitals(latitude, longitude, disease_type)
+                if hospitals:
+                    st.subheader(f"Top 5 Nearby {disease_type} Doctors (Sorted by Rating)")
+                    for i, hospital in enumerate(hospitals, 1):
+                        st.write(f"**{i}. {hospital.get('name', 'N/A')}**")
+                        st.write(f"⭐ **Rating:** {hospital.get('rating', 'N/A')}")
+                        maps_url = f"https://www.google.com/maps/search/?api=1&query={hospital['name'].replace(' ', '+')}"
+                        st.markdown(f"Address: [{hospital['vicinity']}]({maps_url})")
+                        if hospital.get('photos'):
+                        # Assuming the first photo reference is the one to be displayed
+                            photo_reference = hospital['photos'][0].get('photo_reference')
+                            if photo_reference:
+                                    photo_url = f"https://maps.gomaps.pro/maps/api/place/photo?maxwidth=400&photo_reference={photo_reference}&key=AlzaSyBPrvZF2bklzIgtDAxwtjqQ2duiHG9PELN"
+                                        
+                                        # Custom CSS for image styling
+                                    st.markdown("""
+                                        <style>
+                                        .hospital-image {
+                                            width: 500px;
+                                            height: 350px;
+                                            object-fit: cover;
+                                            border-radius: 10px;
+                                            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                        }
+                                        .hospital-image:hover {
+                                            transform: scale(1.05);
+                                            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+                                        }
+                                        </style>
+                                        """, unsafe_allow_html=True)
+                                        
+                                        # Display image with custom class
+                                    st.markdown(f'<img src="{photo_url}" class="hospital-image" alt="{hospital.get("name", "Hospital Image")}">', unsafe_allow_html=True)
+                            else:
+                                st.write("   - No image available")
+                        else:
+                            st.write("   - No image available")
+
+                else:
+                    st.error("No hospitals found near the given location.")
+            else:
+                st.error("Unable to fetch coordinates for the given place.")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
