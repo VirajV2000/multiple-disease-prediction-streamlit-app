@@ -32,7 +32,29 @@ def fetch_nearby_hospitals(latitude, longitude,disease_type):
     disease_keywords = {
         'diabetes': 'diabetes doctor',
         'heart': 'heart doctor',
-        'parkinsons': "Parkinson's disease doctor"
+        'parkinsons': "Parkinson's disease doctor",
+        'fever':'fever doctor',
+        "High Fever": "general physician",
+        "Severe Flu": "general physician",
+        "COVID-19 Symptoms": "infectious disease",
+        "Severe Infection": "infectious disease",
+        "Asthma Attack": "pulmonologist",
+        "Difficulty Breathing": "pulmonologist",
+        "Severe Cough": "pulmonologist",
+        "Chest Congestion": "pulmonologist",
+        "Road Accident": "emergency medicine",
+        "Sports Injury": "orthopedic",
+        "Falls & Fractures": "orthopedic",
+        "Burns": "plastic surgery",
+        "Chest Pain": "cardiologist",
+        "High Blood Pressure": "cardiologist",
+        "Heart Palpitations": "cardiologist",
+        "Food Poisoning": "gastroenterologist",
+        "Severe Abdominal Pain": "gastroenterologist",
+        "Acute Diarrhea": "gastroenterologist",
+        "Severe Allergic Reaction": "allergist",
+        "Anaphylaxis": "emergency medicine",
+        "Skin Reactions": "dermatologist"
     }
     
     # Get the keyword for the selected disease type
@@ -72,7 +94,7 @@ with st.sidebar:
     selected = option_menu('Multiple Disease Prediction System',
                            ['Diabetes Prediction',
                             'Heart Disease Prediction',
-                            'Parkinsons Prediction'],
+                            'Parkinsons Prediction','Emergency'],
                            menu_icon='hospital-fill',
                            icons=['activity', 'heart', 'person'],
                            default_index=0)
@@ -216,6 +238,88 @@ elif selected == "Parkinsons Prediction":
             st.success(parkinsons_diagnosis)
         except ValueError:
             st.error("Please provide valid numeric inputs for all fields.")
+
+elif selected == 'Emergency':
+    st.title('Emergency Medical Assistance')
+    
+    # Create two main sections using tabs
+    emergency_tab, hospital_tab = st.tabs(["Select Emergency Condition", "Find Nearby Doctors"])
+    
+    with emergency_tab:
+        st.subheader("Common Emergency Conditions")
+        
+        
+        
+        # Organize emergency conditions into categories
+        emergency_categories = {
+            "Fever & Infections": {
+                "conditions": ["High Fever", "Severe Flu", "COVID-19 Symptoms", "Severe Infection"],
+                "icon": "🤒"
+            },
+            "Respiratory": {
+                "conditions": ["Asthma Attack", "Difficulty Breathing", "Severe Cough", "Chest Congestion"],
+                "icon": "🫁"
+            },
+            "Injuries & Accidents": {
+                "conditions": ["Road Accident", "Sports Injury", "Falls & Fractures", "Burns"],
+                "icon": "🚑"
+            },
+            "Cardiovascular": {
+                "conditions": ["Chest Pain", "High Blood Pressure", "Heart Palpitations"],
+                "icon": "❤️"
+            },
+            "Digestive": {
+                "conditions": ["Food Poisoning", "Severe Abdominal Pain", "Acute Diarrhea"],
+                "icon": "🤢"
+            },
+            "Allergies": {
+                "conditions": ["Severe Allergic Reaction", "Anaphylaxis", "Skin Reactions"],
+                "icon": "⚠️"
+            }
+        }
+        
+        # Create columns for better organization
+        col1, col2 = st.columns(2)
+        # st.session_state.disease_type=''
+        # Initialize session state for selected condition if not exists
+        if 'selected_emergency' not in st.session_state:
+            st.session_state.selected_emergency = None
+            
+        # Display categories and conditions in two columns
+        for i, (category, data) in enumerate(emergency_categories.items()):
+            with col1 if i % 2 == 0 else col2:
+                st.markdown(f"### {data['icon']} {category}")
+                for condition in data['conditions']:
+                    if st.button(condition, key=f"btn_{condition}", 
+                               use_container_width=True,
+                               type="primary" if st.session_state.selected_emergency == condition else "secondary"):
+                        st.session_state.selected_emergency = condition
+                        # Store the corresponding specialty in session state
+                        # st.session_state.disease_type = emergency_to_specialty[condition]
+                        st.success(f"Selected condition: {condition}")
+                st.markdown("---")
+        st.write(st.session_state.selected_emergency)
+        # Display selected condition and first aid instructions
+        if st.session_state.selected_emergency:
+            st.markdown(f"### Current Selection: {st.session_state.selected_emergency}")
+            
+            # Basic information collection
+            with st.expander("Add Patient Information (Optional)"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    patient_age = st.number_input("Patient's Age", 0, 120, 25)
+                    patient_gender = st.selectbox("Patient's Gender", ["Male", "Female", "Other"])
+                with col2:
+                    emergency_severity = st.select_slider("Severity Level", 
+                                                        options=["Mild", "Moderate", "Severe", "Critical"],
+                                                        value="Moderate")
+                    duration = st.number_input("Duration (hours)", 0, 72, 1)
+                
+                if emergency_severity in ["Severe", "Critical"]:
+                    st.error("⚠️ Based on the severity, please call emergency services immediately!")
+        disease_type=st.session_state.selected_emergency
+    
+
 
 # Add Hospital Locator section (outside sidebar)
 st.title("Hospital Locator")
